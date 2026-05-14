@@ -509,19 +509,64 @@ const applyLanguage = (lang) => {
 
 collectTranslatableNodes();
 
+const languageLabels = {
+  en: "English",
+  hi: "Hindi",
+  bn: "Bengali",
+};
 const languageSwitchers = document.querySelectorAll(".language-switcher");
-if (languageSwitchers.length) {
+const languageDropdowns = document.querySelectorAll("[data-language-dropdown]");
+
+const syncLanguageControls = () => {
   languageSwitchers.forEach((switcher) => {
     switcher.value = currentLanguage;
   });
+
+  languageDropdowns.forEach((dropdown) => {
+    const label = dropdown.querySelector("[data-language-label]");
+    const toggle = dropdown.querySelector(".language-dropdown-toggle");
+    if (label) label.textContent = languageLabels[currentLanguage] || languageLabels.en;
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+    dropdown.classList.remove("is-open");
+    dropdown.querySelectorAll("[data-lang]").forEach((option) => {
+      option.setAttribute("aria-selected", String(option.dataset.lang === currentLanguage));
+    });
+  });
+};
+
+if (languageSwitchers.length || languageDropdowns.length) {
   applyLanguage(currentLanguage);
+  syncLanguageControls();
+
   languageSwitchers.forEach((switcher) => {
     switcher.addEventListener("change", (event) => {
-      languageSwitchers.forEach((otherSwitcher) => {
-        otherSwitcher.value = event.target.value;
-      });
       applyLanguage(event.target.value);
+      syncLanguageControls();
     });
+  });
+
+  languageDropdowns.forEach((dropdown) => {
+    const toggle = dropdown.querySelector(".language-dropdown-toggle");
+    toggle?.addEventListener("click", () => {
+      const isOpen = dropdown.classList.toggle("is-open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    dropdown.querySelectorAll("[data-lang]").forEach((option) => {
+      option.addEventListener("click", () => {
+        applyLanguage(option.dataset.lang);
+        syncLanguageControls();
+      });
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-language-dropdown]")) return;
+    syncLanguageControls();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") syncLanguageControls();
   });
 }
 
@@ -688,6 +733,16 @@ if (orderBuilder) {
 
   updateOrderBuilder();
 }
+
+document.querySelectorAll("[data-scroll-target]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    const target = document.getElementById(link.dataset.scrollTarget);
+    if (!target) return;
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
 
 const observer = new IntersectionObserver(
   (entries) => {
